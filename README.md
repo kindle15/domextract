@@ -4,7 +4,7 @@ DOM based web content extractor for Japanese websites
 This tool can extract article body automatically by using Random Forest.
 
 
-#preparation
+# preparation
 You need to install MeCab.
 
 ```
