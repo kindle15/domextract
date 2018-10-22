@@ -30,7 +30,7 @@ def get_textnodes(r, regex, regex0):
         return False, e
     
 
-def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35, is_url=True, debug=False):
+def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35, is_url=True, debug=False, is_multiprocess=False):
     if is_url:
         r = requests.get(target)
     else:
@@ -39,7 +39,7 @@ def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex
             r.content = f.read()
     flag, df = get_textnodes(r, regex, regex0)
     df = prepare_df(df, tagger)
-    X = build(df, columns, *params)
+    X = build(df, columns, *params, is_multiprocess=is_multiprocess)
     X = X.replace([np.inf, -np.inf], np.nan)
     X = X.fillna(0)
     if debug:

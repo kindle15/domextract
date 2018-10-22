@@ -278,35 +278,57 @@ def execute(d):
     return data
 
 
-def build(df, columns, jpstps, enstps, plist, nums, endmark,tags_b49,tags_b110, col1="#text", col2="xpath", col3="xpath_fixed", col4="#text_tokenized"):
+def build(df, columns, jpstps, enstps, plist, nums, endmark,tags_b49,tags_b110, is_multiprocess=False, col1="#text", col2="xpath", col3="xpath_fixed", col4="#text_tokenized"):
     tser, xser, xfser, ttser = df[col1], df[col2], df[col3], df[col4]
     assert len(tser) == len(xser)
     assert len(xser) == len(xfser)
     assert len(xfser) == len(ttser)
     length = len(xser)
     out = []
-    from multiprocessing import Pool, Manager, cpu_count
-    mng = Manager()
-    pf = mng.dict()
-    gpf = mng.dict()
-    rpf = mng.dict()
-    tdict = mng.dict()
-    gtdict = mng.dict()
-    rtdict = mng.dict()
 
-    pool = Pool(cpu_count())
+    if is_multiprocess:
+        from multiprocessing import Pool, Manager, cpu_count
+        mng = Manager()
+        pf = mng.dict()
+        gpf = mng.dict()
+        rpf = mng.dict()
+        tdict = mng.dict()
+        gtdict = mng.dict()
+        rtdict = mng.dict()
 
-    out = pool.map(
-        execute,
-        [(
-            n,x, length,
-            pf,gpf,rpf,
-            tdict,gtdict,rtdict,
-            df, xfser,
-            jpstps, enstps,
-            nums, plist, endmark,
-            tags_b49, tags_b110
-        ) for n,x in enumerate(zip(tser,xser,xfser,ttser))])    
+        pool = Pool(cpu_count())
+
+        out = pool.map(
+            execute,
+            [(
+                n,x, length,
+                pf,gpf,rpf,
+                tdict,gtdict,rtdict,
+                df, xfser,
+                jpstps, enstps,
+                nums, plist, endmark,
+                tags_b49, tags_b110
+            ) for n,x in enumerate(zip(tser,xser,xfser,ttser))])
+    else:
+        pf = {}
+        gpf = {}
+        rpf = {}
+        tdict = {}
+        gtdict = {}
+        rtdict = {}
+
+        out = list(map(
+            execute,
+            [(
+                n,x, length,
+                pf,gpf,rpf,
+                tdict,gtdict,rtdict,
+                df, xfser,
+                jpstps, enstps,
+                nums, plist, endmark,
+                tags_b49, tags_b110
+            ) for n,x in enumerate(zip(tser,xser,xfser,ttser))]))
+        
     out = pd.DataFrame(out)
     out["b1"] = b1(df)
 
