@@ -6,6 +6,7 @@ import numpy as np
 from bs4 import BeautifulSoup, Comment, Tag
 from domextract.fe_dom import build, prepare_df
 from domextract.xpath_soup import xpath_soup
+from collections import namedtuple
 import MeCab
 
 
@@ -31,11 +32,14 @@ def get_textnodes(r, regex, regex0):
     
 
 def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35, is_url=True, debug=False, is_multiprocess=False):
-    if is_url:
+    if str == is_url:
+        r = namedtuple('Item',('content'))
+        r.content = target
+    elif is_url:
         r = requests.get(target)
     else:
         with open(target,"r") as f:
-            r = lambda x: x
+            r = namedtuple('Item',('content'))
             r.content = f.read()
     flag, df = get_textnodes(r, regex, regex0)
     df = prepare_df(df, tagger)
