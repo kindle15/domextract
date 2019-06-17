@@ -3,7 +3,7 @@ DOM based web content extractor for Japanese websites
 
 This tool can extract article contents by using Random Forest.
 
-## preparation
+## Preparation
 You need to install MeCab.
 
 ```
@@ -21,15 +21,15 @@ git clone https://github.com/taku910/mecab && \
     make install
 ```
 
-## installation
+## Installation
 
 ```
 python setup.py install
 ```
 
-## how to use
+## How to use
 
-### 1. Extract from the website.
+### 1. Extract from website.
 
 ```python
 from domextract import Extractor
@@ -37,7 +37,7 @@ ext = Extractor()
 result = ext.extract("http://example.com", is_url=True)
 ```
 
-### 2. Extract from the html file
+### 2. Extract from html file
 
 ```python
 from domextract import Extractor
@@ -54,7 +54,7 @@ result = ext.extract(data, is_url=str)
 ```
 
 
-## test
+## Test
 
 You can test this module.
 
