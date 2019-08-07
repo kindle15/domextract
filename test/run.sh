@@ -1,5 +1,5 @@
 #!/bin/bash
 
 rm testdata2.csv
-python test1.py
-python check.py
+python3 test1.py
+python3 check.py
