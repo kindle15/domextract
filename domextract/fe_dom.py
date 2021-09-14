@@ -5,12 +5,12 @@ import string
 import numpy as np
 
 
-def load_stopwords(filepath):
+def _load_stopwords(filepath):
     with open(filepath) as f:
         return [line.strip() for line in f]
 
 
-def tokenize(x, tagger):
+def _tokenize(x, tagger):
     return tagger.parse(x).split()
 
 
@@ -19,27 +19,29 @@ def prepare_df(df, tagger):
     reg = re.compile(r"\[[0-9]+\]")
     df['xpath_fixed'] = list(map(lambda x: re.sub(reg,"",x),df['xpath'].tolist()))
     df = df[list(map(lambda x: "script" not in x, df['xpath_fixed']))]
-    df['#text_tokenized'] = list(map(partial(tokenize, tagger=tagger), df["#text"]))
+    df['#text_tokenized'] = list(map(partial(_tokenize, tagger=tagger), df["#text"]))
     return df
 
 
-def b1(df, column="#text"):
+def _b1(df, column="#text"):
     return df[[column]].duplicated()
 
 
-def b3_single(xpath_series, xpath_fixed, length):
+def _b3_single(xpath_series, xpath_fixed, length):
+    if length == 0:
+        return 0
     return sum(xpath_series == xpath_fixed)/length
 
 
-def b5_single(tokenized):
+def _b5_single(tokenized):
     return np.log(len(tokenized))
 
 
-def b6_single(tokenized):
+def _b6_single(tokenized):
     return np.mean([len(y) for y in tokenized])
 
 
-def b7_single(tokenized, jpstps, enstps):
+def _b7_single(tokenized, jpstps, enstps):
     tmp = np.isin(tokenized, jpstps+enstps)
     if len(tmp) == 0:
         return 0
@@ -47,15 +49,15 @@ def b7_single(tokenized, jpstps, enstps):
         return float(sum(tmp))/float(len(tmp))
 
 
-def b9_single(text):
+def _b9_single(text):
     return np.log(len(list(text)))
 
 
-def o4_single(xpath_fixed):
+def _o4_single(xpath_fixed):
     return "p" in xpath_fixed.split("/")
 
 
-def b10_b24_single(text, plist):
+def _b10_b24_single(text, plist):
     tmp = np.isin(list(text), plist)
     t = float(sum(tmp))
     n_punkt = t
@@ -66,7 +68,7 @@ def b10_b24_single(text, plist):
     return punkt_ratio, n_punkt
 
 
-def b11_single(text, nums):
+def _b11_single(text, nums):
     tmp = list(text)
     if len(tmp) == 0:
         num_ratio = 0
@@ -75,15 +77,15 @@ def b11_single(text, nums):
     return num_ratio
 
 
-def b14_single(text, endmark):
+def _b14_single(text, endmark):
     return np.any([text.strip().endswith(y) for y in endmark])
 
 
-def b26_single(n, length):
+def _b26_single(n, length):
     return float(n)/float(length)
 
 
-def b29p_single(text, target, col2):
+def _b29p_single(text, target, col2):
     try:
         b29 = float(len(list(text)))/float(sum(len(list(y)) for y in target[col2]))
     except:
@@ -91,7 +93,7 @@ def b29p_single(text, target, col2):
     return b29
 
 
-def update_b29p(b29, parent_level):
+def _update_b29p(b29, parent_level):
     if parent_level == 1:
         return {'b29': b29}
     elif parent_level == 2:
@@ -100,7 +102,7 @@ def update_b29p(b29, parent_level):
         return {'b90': b29}
     return pf
 
-def get_parent(x, parent_level):
+def _get_parent(x, parent_level):
     if parent_level==None:
         parent = "/html/body"
     else:
@@ -108,7 +110,7 @@ def get_parent(x, parent_level):
     return parent
 
 
-def b30p_single(target, col3):
+def _b30p_single(target, col3):
     atags = [y.endswith("a") for y in target[col3]]
     if len(atags) == 0:
         b30 = 0
@@ -117,7 +119,7 @@ def b30p_single(target, col3):
     return b30
 
 
-def o1p_single(target, col3):   
+def _o1p_single(target, col3):   
     ptags = ["p" in y.split("/") for y in target[col3]]
     if len(ptags) == 0:
         o1 = 0
@@ -126,7 +128,7 @@ def o1p_single(target, col3):
     return o1
 
 
-def b7p_single(target, col4, jpstps, enstps):
+def _b7p_single(target, col4, jpstps, enstps):
     b7 = []
     for y in target[col4]:
         tmp = np.isin(y, jpstps+enstps)
@@ -139,7 +141,7 @@ def b7p_single(target, col4, jpstps, enstps):
     return b7
 
 
-def b10p_single(target, col2, plist):
+def _b10p_single(target, col2, plist):
     punkt_ratio = []
     tmp = []
     for y in target[col2]:
@@ -153,7 +155,7 @@ def b10p_single(target, col2, plist):
         )
     return punkt_ratio
 
-def b11p_single(target, col2, nums):
+def _b11p_single(target, col2, nums):
     num_ratio = []
     tmp = []
     for y in target[col2]:
@@ -165,7 +167,7 @@ def b11p_single(target, col2, nums):
     return num_ratio
 
 
-def update_pf(pf, parent, parent_level, values):
+def _update_pf(pf, parent, parent_level, values):
     if parent_level == 1:
         keys = ['b31', 'b32', 'b34', 'b35', 'b36', 'b39', 'b29','b30', 'o1']
     elif parent_level == 2:
@@ -177,40 +179,40 @@ def update_pf(pf, parent, parent_level, values):
     return pf
     
         
-def b29_b30_o1_b31_single(pf, tdict, df, x, text, rdata, col1="xpath", col2="#text", col3="xpath_fixed", col4="#text_tokenized", parent_level=1):
+def _b29_b30_o1_b31_single(pf, tdict, df, x, text, rdata, col1="xpath", col2="#text", col3="xpath_fixed", col4="#text_tokenized", parent_level=1):
     jpstps = rdata["jpstps"]
     enstps = rdata["enstps"]
     plist = rdata["plist"]
     nums = rdata["nums"]
     endmark = rdata["endmark"]
-    parent = get_parent(x, parent_level)
+    parent = _get_parent(x, parent_level)
 
     if parent in pf:
         try:
             target = tdict[parent]
-            b29 = b29p_single(text, target, col2)
-            b29 = update_b29p(b29, parent_level)
+            b29 = _b29p_single(text, target, col2)
+            b29 = _update_b29p(b29, parent_level)
             return parent, pf, tdict, b29
         except:
             pass
     target = df[list(map(lambda y: parent in y, df[col1]))]
-    b29 = b29p_single(text, target, col2)
-    b29 = update_b29p(b29, parent_level)
-    b30 = b30p_single(target, col3)
-    o1 = o1p_single(target, col3)
+    b29 = _b29p_single(text, target, col2)
+    b29 = _update_b29p(b29, parent_level)
+    b30 = _b30p_single(target, col3)
+    o1 = _o1p_single(target, col3)
     b6 = np.mean(np.concatenate([[len(y) for y in x] for x in target[col4]]))
-    b7 = b7p_single(target, col4, jpstps, enstps)
+    b7 = _b7p_single(target, col4, jpstps, enstps)
     b9 = np.log(len(list(' '.join([y for y in target[col2]]))))
-    b10 = b10p_single(target, col2, plist)
-    b11 = b11p_single(target, col2, nums)
+    b10 = _b10p_single(target, col2, plist)
+    b11 = _b11p_single(target, col2, nums)
     b14 = np.any([target[col2].tolist()[-1].endswith(y) for y in endmark])
     values = [b6, b7, b9, b10, b11, b14, b29, b30, o1]
-    pf = update_pf(pf, parent, parent_level, values)
+    pf = _update_pf(pf, parent, parent_level, values)
     tdict[parent] = target
     return parent, pf, tdict, b29
 
 
-def b49_single(xpath_fixed, tags, parent_level=1):
+def _b49_single(xpath_fixed, tags, parent_level=1):
     tmp = np.zeros(len(tags))
     t = xpath_fixed.split("/")[-(parent_level+1)]
     try:
@@ -221,7 +223,7 @@ def b49_single(xpath_fixed, tags, parent_level=1):
     return {str(k):v for k,v in zip(range(49, 49+len(tags)), tmp)}
 
 
-def b110_single(xpath_fixed, tags):    
+def _b110_single(xpath_fixed, tags):    
     tmp = np.zeros(len(tags))
     t = xpath_fixed.split("/")[-1]
     try:
@@ -247,25 +249,25 @@ def execute(d):
     tags_b49 = d[16]
     tags_b110 = d[17]
     rdata = {"plist":plist, "nums":nums, "endmark":endmark, "jpstps":jpstps, "enstps":enstps}    
-    b10, b24 = b10_b24_single(t, plist)
-    parent, pf, tdict, b29_1 = b29_b30_o1_b31_single(pf, tdict, df, x, t, rdata, parent_level=1)
-    gparent, gpf, gtdict, b29_2 = b29_b30_o1_b31_single(gpf, gtdict, df, x, t, rdata, parent_level=2)
-    rparent, rpf, rtdict, b29_3 = b29_b30_o1_b31_single(rpf, rtdict, df, x, t, rdata, parent_level=None)
-    ptag = b49_single(xf, tags_b49)
-    ctag = b110_single(xf, tags_b110)
+    b10, b24 = _b10_b24_single(t, plist)
+    parent, pf, tdict, b29_1 = _b29_b30_o1_b31_single(pf, tdict, df, x, t, rdata, parent_level=1)
+    gparent, gpf, gtdict, b29_2 = _b29_b30_o1_b31_single(gpf, gtdict, df, x, t, rdata, parent_level=2)
+    rparent, rpf, rtdict, b29_3 = _b29_b30_o1_b31_single(rpf, rtdict, df, x, t, rdata, parent_level=None)
+    ptag = _b49_single(xf, tags_b49)
+    ctag = _b110_single(xf, tags_b110)
     
     data = {
-        "b3": b3_single(xfser, xf, length),
-        "b5": b5_single(tt),
-        "b6": b6_single(tt),
-        "b7": b7_single(tt, jpstps, enstps),
-        "b9": b9_single(t),
-        "o4": o4_single(xf),
+        "b3": _b3_single(xfser, xf, length),
+        "b5": _b5_single(tt),
+        "b6": _b6_single(tt),
+        "b7": _b7_single(tt, jpstps, enstps),
+        "b9": _b9_single(t),
+        "o4": _o4_single(xf),
         "b10": b10,
         "b24": b24,
-        "b11": b11_single(t, nums),
-        "b14": b14_single(t, endmark),
-        "b26": b26_single(n, length),
+        "b11": _b11_single(t, nums),
+        "b14": _b14_single(t, endmark),
+        "b26": _b26_single(n, length),
         **pf[parent],
         **gpf[gparent],
         **rpf[rparent],
@@ -278,59 +280,32 @@ def execute(d):
     return data
 
 
-def build(df, columns, jpstps, enstps, plist, nums, endmark,tags_b49,tags_b110, is_multiprocess=False, col1="#text", col2="xpath", col3="xpath_fixed", col4="#text_tokenized"):
+def build(df, columns, jpstps, enstps, plist, nums, endmark,tags_b49,tags_b110, col1="#text", col2="xpath", col3="xpath_fixed", col4="#text_tokenized"):
     tser, xser, xfser, ttser = df[col1], df[col2], df[col3], df[col4]
     assert len(tser) == len(xser)
     assert len(xser) == len(xfser)
     assert len(xfser) == len(ttser)
     length = len(xser)
     out = []
-
-    if is_multiprocess:
-        from multiprocessing import Pool, Manager, cpu_count
-        mng = Manager()
-        pf = mng.dict()
-        gpf = mng.dict()
-        rpf = mng.dict()
-        tdict = mng.dict()
-        gtdict = mng.dict()
-        rtdict = mng.dict()
-
-        pool = Pool(cpu_count())
-
-        out = pool.map(
-            execute,
-            [(
-                n,x, length,
-                pf,gpf,rpf,
-                tdict,gtdict,rtdict,
-                df, xfser,
-                jpstps, enstps,
-                nums, plist, endmark,
-                tags_b49, tags_b110
-            ) for n,x in enumerate(zip(tser,xser,xfser,ttser))])
-    else:
-        pf = {}
-        gpf = {}
-        rpf = {}
-        tdict = {}
-        gtdict = {}
-        rtdict = {}
-
-        out = list(map(
-            execute,
-            [(
-                n,x, length,
-                pf,gpf,rpf,
-                tdict,gtdict,rtdict,
-                df, xfser,
-                jpstps, enstps,
-                nums, plist, endmark,
-                tags_b49, tags_b110
-            ) for n,x in enumerate(zip(tser,xser,xfser,ttser))]))
-        
+    pf = {}
+    gpf = {}
+    rpf = {}
+    tdict = {}
+    gtdict = {}
+    rtdict = {}
+    out = list(map(
+        execute,
+        [(
+            n,x, length,
+            pf,gpf,rpf,
+            tdict,gtdict,rtdict,
+            df, xfser,
+            jpstps, enstps,
+            nums, plist, endmark,
+            tags_b49, tags_b110
+        ) for n,x in enumerate(zip(tser,xser,xfser,ttser))]))        
     out = pd.DataFrame(out)
-    out["b1"] = b1(df)
+    out["b1"] = _b1(df)
 
     return out[columns]
     

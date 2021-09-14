@@ -10,44 +10,32 @@ from collections import namedtuple
 import MeCab
 
 
-def get_textnodes(r, regex, regex0):
-    try:
-        soup = BeautifulSoup(r.content, "html.parser")
-        [e.extract() for e in soup(text=lambda text: isinstance(text, Comment))]
-        [e.extract() for e in soup.findAll(["script", "link", "noscript"])]
-        out = []
-        for node in soup.findAll(["div","section","article"]):
-            for n in node.findAll(text=True, recursive=True):
-                if re.match(regex, n):
-                    continue
-                xpath = xpath_soup(n)
-                o = {"xpath":xpath, "#text":re.sub(regex0, ' ', str(n).replace("\n"," ").replace("\t"," "))}
-                if o in out:
-                    continue
-                out.append(o)
-        df = pd.DataFrame(out)
-        return True, df
-    except Exception as e:
-        return False, e
+def _get_textnodes(r, regex, regex0):
+    soup = BeautifulSoup(r.content, "html.parser")
+    [e.extract() for e in soup(text=lambda text: isinstance(text, Comment))]
+    [e.extract() for e in soup.findAll(["script", "link", "noscript", "meta", "style"])]
+    out = []
+    for node in soup.findAll(["div","section","article"]):
+        for n in node.findAll(text=True, recursive=True):
+            if re.match(regex, n):
+                continue
+            xpath = xpath_soup(n)
+            o = {"xpath":xpath, "#text":re.sub(regex0, ' ', str(n).replace("\n"," ").replace("\t"," "))}
+            if o in out:
+                continue
+            out.append(o)
+    df = pd.DataFrame(out)
+    return df
     
 
-def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35, is_url=True, debug=False, is_multiprocess=False):
-    if str == is_url:
-        r = namedtuple('Item',('content'))
-        r.content = target
-    elif is_url:
-        r = requests.get(target)
-    else:
-        with open(target,"r") as f:
-            r = namedtuple('Item',('content'))
-            r.content = f.read()
-    flag, df = get_textnodes(r, regex, regex0)
+def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35):
+    r = namedtuple('Item',('content'))
+    r.content = target
+    df = _get_textnodes(r, regex, regex0)
     df = prepare_df(df, tagger)
-    X = build(df, columns, *params, is_multiprocess=is_multiprocess)
+    X = build(df, columns, *params)
     X = X.replace([np.inf, -np.inf], np.nan)
     X = X.fillna(0)
-    if debug:
-        X.to_csv("testdata2.csv", index=False)
     probs = model.predict_proba(X)
     preds = [x[1]>threshold for x in probs]
     return ' '.join([re.sub(regex1, " ", re.sub(regex2, "", x)) for x,y in zip(df['#text'], preds) if y == True])

@@ -1,7 +1,9 @@
 import domextract
-import requests
+
+with open("test.html") as f:
+    html = f.read()
 
 ext = domextract.Extractor()
-print(ext.extract("test.html",is_url=False, debug=True))
+print(ext.extract(html))
 
 
