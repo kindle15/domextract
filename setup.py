@@ -8,10 +8,10 @@ setup(name="domextract",
       packages=find_packages(),
       install_requires=[
           "beautifulsoup4==4.10.0",
-          "mecab-python3==0.996.1",
+          "mecab-python3",
           "numpy==1.19.5",
-          "pandas==0.25.1",
-          "requests==2.26.0",
+          "pandas",
+          "requests",
           "scikit-learn==0.24.2"
       ],
       package_data={
