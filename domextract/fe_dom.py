@@ -1,3 +1,4 @@
+
 import re
 import pandas as pd
 import MeCab
@@ -34,11 +35,19 @@ def _b3_single(xpath_series, xpath_fixed, length):
 
 
 def _b5_single(tokenized):
-    return np.log(len(tokenized))
+    length = len(tokenized)
+    if length == 0:
+        return 0
+    else:
+        return np.log(length)
 
 
 def _b6_single(tokenized):
-    return np.mean([len(y) for y in tokenized])
+    arr = [len(y) for y in tokenized]
+    if arr:
+        return np.nanmean(arr)
+    else:
+        return 0
 
 
 def _b7_single(tokenized, jpstps, enstps):
@@ -50,7 +59,11 @@ def _b7_single(tokenized, jpstps, enstps):
 
 
 def _b9_single(text):
-    return np.log(len(list(text)))
+    length = len(list(text))
+    if length == 0:
+        return 0
+    else:
+        return np.log(length)
 
 
 def _o4_single(xpath_fixed):
@@ -61,9 +74,9 @@ def _b10_b24_single(text, plist):
     tmp = np.isin(list(text), plist)
     t = float(sum(tmp))
     n_punkt = t
-    if len(tmp) == 0:
+    if len(tmp) == 0 or t == 0:
         punkt_ratio = 0
-    else:   
+    else:
         punkt_ratio = np.log(float(t) / float(len(tmp)))
     return punkt_ratio, n_punkt
 
@@ -147,7 +160,7 @@ def _b10p_single(target, col2, plist):
     for y in target[col2]:
         tmp.append(np.isin(list(y), plist))
     t = sum(np.concatenate(tmp))
-    if len(tmp) == 0:
+    if len(tmp) == 0 or t == 0:
         punkt_ratio = 0.0
     else:   
         punkt_ratio = np.log(
@@ -200,9 +213,13 @@ def _b29_b30_o1_b31_single(pf, tdict, df, x, text, rdata, col1="xpath", col2="#t
     b29 = _update_b29p(b29, parent_level)
     b30 = _b30p_single(target, col3)
     o1 = _o1p_single(target, col3)
-    b6 = np.mean(np.concatenate([[len(y) for y in x] for x in target[col4]]))
+    b6 = np.nanmean(
+        np.concatenate([[len(y) for y in x] for x in target[col4]]))
     b7 = _b7p_single(target, col4, jpstps, enstps)
-    b9 = np.log(len(list(' '.join([y for y in target[col2]]))))
+    tmp_length = len(list(' '.join([y for y in target[col2]])))
+    b9 = 0
+    if tmp_length != 0:
+        b9 = np.log(tmp_length)
     b10 = _b10p_single(target, col2, plist)
     b11 = _b11p_single(target, col2, nums)
     b14 = np.any([target[col2].tolist()[-1].endswith(y) for y in endmark])
