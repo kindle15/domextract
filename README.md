@@ -1,6 +1,8 @@
 # domextract
 Web content extractor for articles.
 
+Note: This tool can no longer be used to extract wiki content. It should be used for general news and blog posts.
+
 ## Preparation
 
 ```
