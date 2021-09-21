@@ -12,21 +12,29 @@ import MeCab
 
 def _clean(soup):
     [e.extract() for e in soup(text=lambda text: isinstance(text, Comment))]
-    [e.extract() for e in soup.findAll(["script", "link", "noscript", "meta", "style"])]
+    [
+        e.extract()
+        for e in soup.findAll(["script", "link", "noscript", "meta", "style"])
+    ]
     return soup
-
 
 
 def _get_textnodes(target, regex, regex0):
     soup = _clean(BeautifulSoup(target, "html.parser"))
     out = []
     arrived = set()
-    for node in soup.findAll(["div","section","article"]):
+    for node in soup.findAll(["div", "section", "article"]):
         for n in node.findAll(text=True, recursive=True):
             if re.match(regex, n):
                 continue
             xpath = xpath_soup(n)
-            o = {"xpath":xpath, "#text":re.sub(regex0, ' ', str(n).replace("\n"," ").replace("\t"," "))}
+            o = {
+                "xpath":
+                xpath,
+                "#text":
+                re.sub(regex0, ' ',
+                       str(n).replace("\n", " ").replace("\t", " "))
+            }
             t = (o["xpath"], o["#text"])
             if t in arrived:
                 continue
@@ -34,17 +42,29 @@ def _get_textnodes(target, regex, regex0):
             out.append(o)
     df = pd.DataFrame(out)
     return df
-    
 
-def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35):
+
+def extract(target,
+            model,
+            columns,
+            tagger,
+            params,
+            regex,
+            regex0,
+            regex1,
+            regex2,
+            threshold=0.35):
     df = _get_textnodes(target, regex, regex0)
     df = prepare_df(df, tagger)
     X = build(df, columns, *params)
     X = X.replace([np.inf, -np.inf], np.nan)
     X = X.fillna(0)
     probs = model.predict_proba(X)
-    preds = [x[1]>threshold for x in probs]
-    return ' '.join([re.sub(regex1, " ", re.sub(regex2, "", x)) for x,y in zip(df['#text'], preds) if y == True])
+    preds = [x[1] > threshold for x in probs]
+    return ' '.join([
+        re.sub(regex1, " ", re.sub(regex2, "", x))
+        for x, y in zip(df['#text'], preds) if y == True
+    ])
 
 
 def prepare_data():
@@ -55,7 +75,7 @@ def prepare_data():
     ps = [join(path, f) for f in fs]
 
     tagger = MeCab.Tagger("-Owakati")
-    
+
     regex = re.compile(r"^[ \n\t]+$")
     regex0 = re.compile(r" [ ]+")
     regex1 = re.compile(r" [ ]+")
@@ -74,6 +94,9 @@ def prepare_data():
     nums = list("0123456789")
     endmark = list(".,?!。！？、")
     tags_b49 = "td div p tr table body ul span li blockquote b small a ol ul i form dl strong pre".split()
-    tags_b110 = "a p td b li span i tr div strong em h3 h2 table h4 small sup h1 blockquote".split()        
-        
-    return clf, columns, tagger, (regex, regex0, regex1, regex2), (jpstps, enstps, plist, nums, endmark, tags_b49, tags_b110)
+    tags_b110 = "a p td b li span i tr div strong em h3 h2 table h4 small sup h1 blockquote".split()
+
+    regexs = (regex, regex0, regex1, regex2)
+    params = (jpstps, enstps, plist, nums, endmark, tags_b49, tags_b110)
+
+    return clf, columns, tagger, regexs, params
