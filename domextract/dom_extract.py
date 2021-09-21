@@ -15,14 +15,17 @@ def _get_textnodes(r, regex, regex0):
     [e.extract() for e in soup(text=lambda text: isinstance(text, Comment))]
     [e.extract() for e in soup.findAll(["script", "link", "noscript", "meta", "style"])]
     out = []
+    arrived = set()
     for node in soup.findAll(["div","section","article"]):
         for n in node.findAll(text=True, recursive=True):
             if re.match(regex, n):
                 continue
             xpath = xpath_soup(n)
             o = {"xpath":xpath, "#text":re.sub(regex0, ' ', str(n).replace("\n"," ").replace("\t"," "))}
-            if o in out:
+            t = (o["xpath"], o["#text"])
+            if t in arrived:
                 continue
+            arrived.add(t)
             out.append(o)
     df = pd.DataFrame(out)
     return df
