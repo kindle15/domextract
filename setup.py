@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="domextract",
-      version="0.0.4",
+      version="0.0.6a",
       description="Web article extractor",
       author="Shun Sugiyama",
       url="https://github.com/sugiyamath/domextract",

@@ -3,6 +3,7 @@ import pandas as pd
 import MeCab
 import string
 import numpy as np
+from functools import partial
 
 
 def _load_stopwords(filepath):
@@ -14,12 +15,13 @@ def _tokenize(x, tagger):
     return tagger.parse(x).split()
 
 
-def prepare_df(df, tagger):
-    from functools import partial
-    reg = re.compile(r"\[[0-9]+\]")
+def _xpath_fix(x, reg):
+    return re.sub(reg, "", x)
+
+
+def prepare_df(df, tagger, reg):
     df['xpath_fixed'] = list(
-        map(lambda x: re.sub(reg, "", x), df['xpath'].tolist()))
-    df = df[list(map(lambda x: "script" not in x, df['xpath_fixed']))]
+        map(partial(_xpath_fix, reg=reg), df['xpath'].tolist()))
     df['#text_tokenized'] = list(
         map(partial(_tokenize, tagger=tagger), df["#text"]))
     return df
@@ -263,20 +265,10 @@ def _b110_single(xpath_fixed, tags):
     return {str(k): v for k, v in zip(range(110, 110 + len(tags)), tmp)}
 
 
-def execute(d):
+def execute(d, length, pf, gpf, rpf, tdict, gtdict, rtdict, df, xfser, jpstps,
+            enstps, nums, plist, endmark, tags_b49, tags_b110):
     n = d[0]
     t, x, xf, tt = d[1]
-    length = d[2]
-    pf, gpf, rpf, tdict, gtdict, rtdict = d[3], d[4], d[5], d[6], d[7], d[8]
-    df = d[9]
-    xfser = d[10]
-    jpstps = d[11]
-    enstps = d[12]
-    nums = d[13]
-    plist = d[14]
-    endmark = d[15]
-    tags_b49 = d[16]
-    tags_b110 = d[17]
     rdata = {
         "plist": plist,
         "nums": nums,
@@ -358,12 +350,24 @@ def build(df,
     tdict = {}
     gtdict = {}
     rtdict = {}
-    out = list(
-        map(execute,
-            [(n, x, length, pf, gpf, rpf, tdict, gtdict, rtdict, df, xfser,
-              jpstps, enstps, nums, plist, endmark, tags_b49, tags_b110)
-             for n, x in enumerate(zip(tser, xser, xfser, ttser))]))
+    func = partial(execute,
+                   length=length,
+                   pf=pf,
+                   gpf=gpf,
+                   rpf=rpf,
+                   tdict=tdict,
+                   gtdict=gtdict,
+                   rtdict=rtdict,
+                   df=df,
+                   xfser=xfser,
+                   jpstps=jpstps,
+                   enstps=enstps,
+                   nums=nums,
+                   plist=plist,
+                   endmark=endmark,
+                   tags_b49=tags_b49,
+                   tags_b110=tags_b110)
+    out = list(map(func, enumerate(zip(tser, xser, xfser, ttser))))
     out = pd.DataFrame(out)
     out["b1"] = _b1(df)
-
     return out[columns]

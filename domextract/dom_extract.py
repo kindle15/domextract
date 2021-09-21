@@ -53,9 +53,10 @@ def extract(target,
             regex0,
             regex1,
             regex2,
+            regex3,
             threshold=0.35):
     df = _get_textnodes(target, regex, regex0)
-    df = prepare_df(df, tagger)
+    df = prepare_df(df, tagger, regex3)
     X = build(df, columns, *params)
     X = X.replace([np.inf, -np.inf], np.nan)
     X = X.fillna(0)
@@ -80,7 +81,8 @@ def prepare_data():
     regex0 = re.compile(r" [ ]+")
     regex1 = re.compile(r" [ ]+")
     regex2 = re.compile(r"[\r\n\t\u3000]")
-
+    regex3 = re.compile(r"\[[0-9]+\]")
+    
     with open(ps[0]) as f:
         columns = [line.strip() for line in f]
     with open(ps[1], "rb") as f:
@@ -96,7 +98,7 @@ def prepare_data():
     tags_b49 = "td div p tr table body ul span li blockquote b small a ol ul i form dl strong pre".split()
     tags_b110 = "a p td b li span i tr div strong em h3 h2 table h4 small sup h1 blockquote".split()
 
-    regexs = (regex, regex0, regex1, regex2)
+    regexs = (regex, regex0, regex1, regex2, regex3)
     params = (jpstps, enstps, plist, nums, endmark, tags_b49, tags_b110)
 
     return clf, columns, tagger, regexs, params
