@@ -10,10 +10,15 @@ from collections import namedtuple
 import MeCab
 
 
-def _get_textnodes(r, regex, regex0):
-    soup = BeautifulSoup(r.content, "html.parser")
+def _clean(soup):
     [e.extract() for e in soup(text=lambda text: isinstance(text, Comment))]
     [e.extract() for e in soup.findAll(["script", "link", "noscript", "meta", "style"])]
+    return soup
+
+
+
+def _get_textnodes(target, regex, regex0):
+    soup = _clean(BeautifulSoup(target, "html.parser"))
     out = []
     arrived = set()
     for node in soup.findAll(["div","section","article"]):
@@ -32,9 +37,7 @@ def _get_textnodes(r, regex, regex0):
     
 
 def extract(target, model, columns, tagger, params, regex, regex0, regex1, regex2, threshold=0.35):
-    r = namedtuple('Item',('content'))
-    r.content = target
-    df = _get_textnodes(r, regex, regex0)
+    df = _get_textnodes(target, regex, regex0)
     df = prepare_df(df, tagger)
     X = build(df, columns, *params)
     X = X.replace([np.inf, -np.inf], np.nan)
